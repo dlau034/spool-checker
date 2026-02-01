@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spool Checker - 3D Filament Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F8F9FA;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .phone-container {
+            width: 100%;
+            height: 100vh;
+            background: #F8F9FA;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #F8F9FA;
+        }
+
+        /* Header */
+        .header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #E8E8E8;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1C1C1E;
+            flex: 1;
+            text-align: center;
+            letter-spacing: -0.3px;
+        }
+
+        .header-left {
+            width: 60px;
+            display: flex;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 4px;
+            width: 60px;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .icon-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1C1C1E;
+            transition: opacity 0.2s;
+            border-radius: 50%;
+        }
+
+        .icon-button:hover {
+            opacity: 0.6;
+        }
+
+        .icon-button:active {
+            opacity: 0.3;
+        }
+
+        .clear-button {
+            font-size: 15px;
+            color: #14786F;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px 8px;
+            font-weight: 500;
+        }
+
+        .clear-button:active {
+            opacity: 0.5;
+        }
+
+        .back-button {
+            font-size: 28px;
+            font-weight: 300;
+            color: #1C1C1E;
+            padding: 0;
+        }
+
+        /* Calculator Content */
+        .calculator-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 20px 16px;
+            background: #F8F9FA;
+            overflow-y: auto;
+        }
+
+        .selected-spool-info {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .spool-brand {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1C1C1E;
+            margin-bottom: 6px;
+            letter-spacing: -0.3px;
+        }
+
+        .spool-details {
+            font-size: 14px;
+            color: #8E8E93;
+            line-height: 1.5;
+        }
+
+        .calculation-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #E8E8E8;
+        }
+
+        .calculation-row:first-of-type {
+            padding-top: 0;
+        }
+
+        .calculation-row:last-child {
+            border-bottom: none;
+        }
+
+        .row-label {
+            font-size: 17px;
+            color: #1C1C1E;
+            font-weight: 400;
+            letter-spacing: -0.3px;
+        }
+
+        .row-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1C1C1E;
+            padding: 10px 20px;
+            background: #F0F0F5;
+            border-radius: 10px;
+            min-width: 90px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: -0.3px;
+        }
+
+        .row-value:hover {
+            background: #E5E5EA;
+        }
+
+        .row-value:active {
+            transform: scale(0.97);
+        }
+
+        .row-value.editable {
+            background: white;
+            border: 2px solid #14786F;
+            color: #14786F;
+        }
+
+        .row-value.result {
+            background: #E8F5F4;
+            color: #14786F;
+            font-weight: 700;
+            font-size: 22px;
+        }
+
+        /* Scrollbar styling */
+        .spool-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .spool-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .spool-list::-webkit-scrollbar-thumb {
+            background: #D1D1D6;
+            border-radius: 2px;
+        }
+
+        /* Input field for calculator */
+        .row-input {
+            font-size: 20px;
+            font-weight: 600;
+            color: #14786F;
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid #14786F;
+            border-radius: 10px;
+            width: 90px;
+            text-align: center;
+            outline: none;
+            letter-spacing: -0.3px;
+            -moz-appearance: textfield;
+        }
+
+        .row-input::-webkit-outer-spin-button,
+        .row-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .row-input::placeholder {
+            color: #C7C7CC;
+        }
+
+        /* Search Screen */
+        .search-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #F8F9FA;
+        }
+
+        .search-bar {
+            padding: 12px 20px 16px;
+            background: white;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid #E8E8E8;
+            border-radius: 10px;
+            font-size: 17px;
+            outline: none;
+            transition: all 0.2s;
+            background: #F8F9FA;
+            color: #1C1C1E;
+        }
+
+        .search-input:focus {
+            border-color: #14786F;
+            background: white;
+        }
+
+        .search-input::placeholder {
+            color: #8E8E93;
+        }
+
+        .spool-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+        }
+
+        .spool-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .spool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .spool-card:active {
+            transform: scale(0.98);
+        }
+
+        .spool-card-info {
+            flex: 1;
+        }
+
+        .spool-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .spool-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1C1C1E;
+            letter-spacing: -0.3px;
+        }
+
+        .spool-material-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            background: #14786F;
+            border-radius: 6px;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .spool-metadata {
+            font-size: 14px;
+            color: #8E8E93;
+            line-height: 1.6;
+        }
+
+        .spool-image {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #E8F5F4 0%, #D4EBE9 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        /* Empty State */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #8E8E93;
+        }
+
+        .empty-state-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            text-align: center;
+            line-height: 1.5;
+            color: #8E8E93;
+        }
+    </style>
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // =============================================================================
+        // SUPABASE CONFIGURATION
+        // =============================================================================
+        const SUPABASE_URL = 'https://mukczuwgyebdimvtcjuq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11a2N6dXdneWViZGltdnRjanVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MDA1NDgsImV4cCI6MjA4NTQ3NjU0OH0.F67m3cMx5C45Hus-AlvUZO_xhDuckWwlbYAvzt9b4Mg';
+
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function SpoolChecker() {
+            const [screen, setScreen] = useState('calculator');
+            const [totalWeight, setTotalWeight] = useState('');
+            const [emptyWeight, setEmptyWeight] = useState('');
+            const [selectedSpool, setSelectedSpool] = useState(null);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [spoolDatabase, setSpoolDatabase] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            const emptyWeightNum = emptyWeight ? parseInt(emptyWeight) : 0;
+            const totalWeightNum = totalWeight ? parseInt(totalWeight) : 0;
+            const filamentWeight = totalWeightNum - emptyWeightNum;
+
+            // Fetch spool data from Supabase
+            useEffect(() => {
+                fetchSpools();
+            }, []);
+
+            const fetchSpools = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+
+                    const { data, error: fetchError } = await supabase
+                        .from('spool_types')
+                        .select('*')
+                        .order('brand', { ascending: true });
+
+                    if (fetchError) {
+                        throw fetchError;
+                    }
+
+                    // Transform data to match our app's format
+                    const formattedData = data.map(spool => ({
+                        id: spool.id,
+                        brand: spool.brand,
+                        material: spool.material,
+                        spoolType: spool.spool_type,
+                        emptyWeight: spool.empty_weight,
+                        kg: spool.kg
+                    }));
+
+                    setSpoolDatabase(formattedData);
+                } catch (err) {
+                    console.error('Error fetching spools:', err);
+                    setError(err.message);
+                    
+                    // Fallback to local data if Supabase fails
+                    setSpoolDatabase([
+                        { id: 1, brand: 'Esun', material: 'PLA+', spoolType: 'Cardboard', emptyWeight: 113, kg: 1.0 },
+                        { id: 2, brand: 'Elegoo', material: 'PLA+', spoolType: 'Plastic', emptyWeight: 154, kg: 1.0 },
+                        { id: 3, brand: 'Elegoo', material: 'PLA+', spoolType: 'Cardboard', emptyWeight: 113, kg: 1.0 },
+                        { id: 4, brand: 'Hatchbox', material: 'PLA', spoolType: 'Plastic', emptyWeight: 140, kg: 1.0 },
+                        { id: 5, brand: 'Prusament', material: 'PETG', spoolType: 'Plastic', emptyWeight: 180, kg: 1.0 },
+                        { id: 6, brand: 'Overture', material: 'PLA', spoolType: 'Cardboard', emptyWeight: 110, kg: 1.0 },
+                        { id: 7, brand: 'Polymaker', material: 'PLA', spoolType: 'Cardboard', emptyWeight: 125, kg: 1.0 },
+                        { id: 8, brand: 'Sunlu', material: 'PLA+', spoolType: 'Plastic', emptyWeight: 165, kg: 1.0 },
+                    ]);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleSpoolSelect = (spool) => {
+                setSelectedSpool(spool);
+                setEmptyWeight(spool.emptyWeight.toString());
+                setScreen('calculator');
+            };
+
+            const handleClear = () => {
+                setTotalWeight('');
+                setEmptyWeight('');
+                setSelectedSpool(null);
+            };
+
+            const handleEmptyWeightChange = (value) => {
+                setEmptyWeight(value);
+                // If user manually edits, clear the selected spool
+                if (selectedSpool) {
+                    setSelectedSpool(null);
+                }
+            };
+
+            const filteredSpools = spoolDatabase.filter(spool =>
+                spool.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                spool.material.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                spool.spoolType.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            return (
+                <div className="phone-container">
+                    {screen === 'calculator' && (
+                        <div className="screen">
+                            <div className="header">
+                                <div className="header-left"></div>
+                                <div className="header-title">Spool Checker</div>
+                                <div className="header-right">
+                                    <button className="clear-button" onClick={handleClear}>Clear</button>
+                                    <button className="icon-button" onClick={() => setScreen('search')}>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="11" cy="11" r="8"/>
+                                            <path d="m21 21-4.35-4.35"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="calculator-content">
+                                {selectedSpool && (
+                                    <div className="selected-spool-info">
+                                        <div className="spool-brand">{selectedSpool.brand}</div>
+                                        <div className="spool-details">
+                                            {selectedSpool.material}, {selectedSpool.kg || '1'}kg<br/>
+                                            {selectedSpool.spoolType}<br/>
+                                            Empty weight: {selectedSpool.emptyWeight}g
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="calculation-row">
+                                    <div className="row-label">Empty Spool</div>
+                                    {selectedSpool ? (
+                                        <div className="row-value" onClick={() => setScreen('search')}>
+                                            {emptyWeightNum}g
+                                        </div>
+                                    ) : (
+                                        <div style={{position: 'relative', display: 'inline-block'}}>
+                                            <input
+                                                type="number"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                className="row-input"
+                                                value={emptyWeight}
+                                                onChange={(e) => handleEmptyWeightChange(e.target.value)}
+                                                placeholder="0"
+                                                style={{paddingRight: '28px'}}
+                                            />
+                                            <span style={{
+                                                position: 'absolute',
+                                                right: '16px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                color: '#14786F',
+                                                fontWeight: '600',
+                                                fontSize: '20px',
+                                                pointerEvents: 'none'
+                                            }}>g</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="calculation-row">
+                                    <div className="row-label">Filament + Spool</div>
+                                    <div style={{position: 'relative', display: 'inline-block'}}>
+                                        <input
+                                            type="number"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            className="row-input"
+                                            value={totalWeight}
+                                            onChange={(e) => setTotalWeight(e.target.value)}
+                                            placeholder="0"
+                                            style={{paddingRight: '28px'}}
+                                        />
+                                        <span style={{
+                                            position: 'absolute',
+                                            right: '16px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            color: '#14786F',
+                                            fontWeight: '600',
+                                            fontSize: '20px',
+                                            pointerEvents: 'none'
+                                        }}>g</span>
+                                    </div>
+                                </div>
+
+                                <div className="calculation-row">
+                                    <div className="row-label">Filament weight</div>
+                                    <div className="row-value result">
+                                        {filamentWeight}g
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {screen === 'search' && (
+                        <div className="screen">
+                            <div className="header">
+                                <div className="header-left">
+                                    <button className="icon-button back-button" onClick={() => setScreen('calculator')}>
+                                        ‹
+                                    </button>
+                                </div>
+                                <div className="search-bar" style={{flex: 1, padding: 0, border: 'none'}}>
+                                    <input
+                                        type="text"
+                                        className="search-input"
+                                        placeholder="Search brand or material..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="search-content">
+                                {loading ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">⏳</div>
+                                        <div className="empty-state-text">Loading spools...</div>
+                                    </div>
+                                ) : error ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">⚠️</div>
+                                        <div className="empty-state-text">
+                                            Using offline data<br/>
+                                            <small style={{fontSize: '13px', marginTop: '8px', display: 'block'}}>
+                                                Configure Supabase to load cloud data
+                                            </small>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="spool-list">
+                                        {filteredSpools.length > 0 ? (
+                                            filteredSpools.map(spool => (
+                                                <div
+                                                    key={spool.id}
+                                                    className="spool-card"
+                                                    onClick={() => handleSpoolSelect(spool)}
+                                                >
+                                                    <div className="spool-card-info">
+                                                        <div className="spool-card-header">
+                                                            <div className="spool-name">{spool.brand}</div>
+                                                            <div className="spool-material-badge">{spool.material}</div>
+                                                        </div>
+                                                        <div className="spool-metadata">
+                                                            {spool.spoolType}<br/>
+                                                            Empty weight: {spool.emptyWeight}g
+                                                        </div>
+                                                    </div>
+                                                    <div className="spool-image">📦</div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="empty-state">
+                                                <div className="empty-state-icon">🔍</div>
+                                                <div className="empty-state-text">
+                                                    No spools found matching "{searchQuery}"
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<SpoolChecker />, document.getElementById('root'));
+    </script>
+</body>
+</html>
