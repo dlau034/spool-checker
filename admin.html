@@ -549,6 +549,7 @@
 </div>
 
 <script>
+(function() { // IIFE - isolates all variables, prevents conflicts with cached scripts
 // Configuration
 const SUPABASE_URL = 'https://mukczuwgyebdimvtcjuq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11a2N6dXdneWViZGltdnRjanVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MDA1NDgsImV4cCI6MjA4NTQ3NjU0OH0.F67m3cMx5C45Hus-AlvUZO_xhDuckWwlbYAvzt9b4Mg';
@@ -848,6 +849,7 @@ document.getElementById('spoolForm').addEventListener('submit', async (e) => {
         submitBtn.textContent = 'Save Spool';
     }
 });
+})(); // End IIFE
 </script>
 
 </body>
