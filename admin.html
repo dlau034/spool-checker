@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spool Admin Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F8F9FA;
+            min-height: 100vh;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1C1C1E;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: #8E8E93;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1C1C1E;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E8E8E8;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #14786F;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #14786F;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0f5e56;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .error-message {
+            background: #FEE;
+            color: #C00;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* Admin Screen */
+        .admin-screen {
+            display: none;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .admin-screen.active {
+            display: block;
+        }
+
+        .admin-header {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .admin-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1C1C1E;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-secondary {
+            background: #F0F0F5;
+            color: #1C1C1E;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #E5E5EA;
+        }
+
+        .btn-add {
+            background: #14786F;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background: #0f5e56;
+        }
+
+        /* Table */
+        .table-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-box {
+            padding: 20px;
+            border-bottom: 1px solid #E8E8E8;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 16px;
+            border: 1px solid #E8E8E8;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #F8F9FA;
+            padding: 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            color: #8E8E93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 16px;
+            border-top: 1px solid #E8E8E8;
+            font-size: 14px;
+            color: #1C1C1E;
+        }
+
+        .data-table tr:hover {
+            background: #F8F9FA;
+        }
+
+        .spool-image-thumb {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-plastic {
+            background: #E3F2FD;
+            color: #1976D2;
+        }
+
+        .badge-cardboard {
+            background: #FFF3E0;
+            color: #F57C00;
+        }
+
+        .badge-metal {
+            background: #E0E0E0;
+            color: #616161;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+
+        .btn-icon:hover {
+            background: #F0F0F5;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1C1C1E;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #8E8E93;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .btn-close:hover {
+            background: #F0F0F5;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* Image Upload */
+        .upload-zone {
+            border: 2px dashed #E8E8E8;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .upload-zone:hover {
+            border-color: #14786F;
+            background: #F8F9FA;
+        }
+
+        .upload-zone.dragover {
+            border-color: #14786F;
+            background: #E8F5F4;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: #8E8E93;
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8E8E93;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8E8E93;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .admin-actions {
+                width: 100%;
+            }
+
+            .btn-secondary {
+                flex: 1;
+            }
+
+            .data-table {
+                font-size: 12px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-box">
+        <h1 class="login-title">🔧 Admin Panel</h1>
+        <p class="login-subtitle">Spool Checker Database Management</p>
+        
+        <div id="loginError" class="error-message"></div>
+        
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input 
+                type="password" 
+                class="form-input" 
+                id="loginPassword" 
+                placeholder="Enter admin password"
+                autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary" id="loginBtn">Sign In</button>
+        
+        <p style="margin-top: 20px; font-size: 12px; color: #8E8E93; text-align: center;">
+            Default password: admin123
+        </p>
+    </div>
+</div>
+
+<!-- Admin Screen -->
+<div class="admin-screen" id="adminScreen">
+    <div class="admin-header">
+        <h1 class="admin-title">Spool Database</h1>
+        <div class="admin-actions">
+            <button class="btn-secondary btn-add" id="addNewBtn">+ Add New Spool</button>
+            <button class="btn-secondary" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div class="search-box">
+            <input 
+                type="text" 
+                class="search-input" 
+                id="searchInput" 
+                placeholder="Search spools...">
+        </div>
+        
+        <div id="loadingState" class="loading">
+            <div>⏳ Loading spools...</div>
+        </div>
+        
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+            <div>No spools found. Add your first spool!</div>
+        </div>
+        
+        <table class="data-table" id="spoolTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Brand</th>
+                    <th>Material</th>
+                    <th>Spool Type</th>
+                    <th>Empty Weight</th>
+                    <th>Filament (kg)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="spoolTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="spoolModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle">Add New Spool</h2>
+            <button class="btn-close" id="closeModalBtn">×</button>
+        </div>
+        
+        <form id="spoolForm">
+            <input type="hidden" id="spoolId">
+            <input type="hidden" id="currentImageUrl">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Brand *</label>
+                    <input type="text" class="form-input" id="spoolBrand" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Material</label>
+                    <input type="text" class="form-input" id="spoolMaterial" placeholder="e.g., PLA, PLA+, PETG">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Spool Type *</label>
+                    <select class="form-input" id="spoolType" required>
+                        <option value="">Select type</option>
+                        <option value="Plastic">Plastic</option>
+                        <option value="Cardboard">Cardboard</option>
+                        <option value="Metal">Metal</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Empty Weight (g) *</label>
+                    <input type="number" class="form-input" id="spoolWeight" required min="1">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Filament Weight (kg)</label>
+                <input type="number" step="0.1" class="form-input" id="spoolKg" value="1.0">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Image</label>
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Drag & drop image or click to browse</div>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                </div>
+                <img id="imagePreview" class="image-preview" style="display: none;">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Spool</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Configuration
+const SUPABASE_URL = 'https://mukczuwgyebdimvtcjuq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11a2N6dXdneWViZGltdnRjanVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MDA1NDgsImV4cCI6MjA4NTQ3NjU0OH0.F67m3cMx5C45Hus-AlvUZO_xhDuckWwlbYAvzt9b4Mg';
+const ADMIN_PASSWORD = 'admin123'; // Change this to your desired password
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentImageFile = null;
+let allSpools = [];
+
+// Check if already logged in
+if (localStorage.getItem('spool_admin_auth') === 'true') {
+    showAdminScreen();
+}
+
+// Login
+document.getElementById('loginBtn').addEventListener('click', login);
+document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') login();
+});
+
+function login() {
+    const password = document.getElementById('loginPassword').value;
+    const errorDiv = document.getElementById('loginError');
+    
+    if (password === ADMIN_PASSWORD) {
+        localStorage.setItem('spool_admin_auth', 'true');
+        showAdminScreen();
+    } else {
+        errorDiv.textContent = 'Invalid password. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+}
+
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('spool_admin_auth');
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminScreen').classList.remove('active');
+});
+
+// Show admin screen
+function showAdminScreen() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminScreen').classList.add('active');
+    loadSpools();
+}
+
+// Load spools
+async function loadSpools() {
+    const loadingState = document.getElementById('loadingState');
+    const emptyState = document.getElementById('emptyState');
+    const table = document.getElementById('spoolTable');
+    const tbody = document.getElementById('spoolTableBody');
+    
+    loadingState.style.display = 'block';
+    emptyState.style.display = 'none';
+    table.style.display = 'none';
+    
+    try {
+        const { data, error } = await supabase
+            .from('spool_types')
+            .select('*')
+            .order('brand', { ascending: true });
+        
+        if (error) throw error;
+        
+        allSpools = data;
+        renderSpools(data);
+        
+        loadingState.style.display = 'none';
+        
+        if (data.length === 0) {
+            emptyState.style.display = 'block';
+        } else {
+            table.style.display = 'table';
+        }
+    } catch (error) {
+        console.error('Error loading spools:', error);
+        loadingState.innerHTML = '<div style="color: #DC3545;">Error loading spools: ' + error.message + '</div>';
+    }
+}
+
+// Render spools
+function renderSpools(spools) {
+    const tbody = document.getElementById('spoolTableBody');
+    tbody.innerHTML = spools.map(spool => {
+        const badgeClass = 'badge-' + spool.spool_type.toLowerCase();
+        return `
+            <tr>
+                <td>
+                    ${spool.image_url 
+                        ? '<img src="' + spool.image_url + '" class="spool-image-thumb" alt="' + spool.brand + '">' 
+                        : '📦'}
+                </td>
+                <td><strong>${spool.brand}</strong></td>
+                <td>${spool.material || '-'}</td>
+                <td><span class="badge ${badgeClass}">${spool.spool_type}</span></td>
+                <td>${spool.empty_weight}g</td>
+                <td>${spool.kg}kg</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-icon" onclick="editSpool(${spool.id})" title="Edit">✏️</button>
+                        <button class="btn-icon" onclick="deleteSpool(${spool.id})" title="Delete">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Search
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    const filtered = allSpools.filter(spool =>
+        spool.brand.toLowerCase().includes(query) ||
+        (spool.material && spool.material.toLowerCase().includes(query)) ||
+        spool.spool_type.toLowerCase().includes(query)
+    );
+    renderSpools(filtered);
+});
+
+// Add new button
+document.getElementById('addNewBtn').addEventListener('click', () => {
+    document.getElementById('modalTitle').textContent = 'Add New Spool';
+    document.getElementById('spoolForm').reset();
+    document.getElementById('spoolId').value = '';
+    document.getElementById('currentImageUrl').value = '';
+    document.getElementById('imagePreview').style.display = 'none';
+    currentImageFile = null;
+    document.getElementById('spoolModal').classList.add('active');
+});
+
+// Close modal
+document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+document.getElementById('spoolModal').addEventListener('click', (e) => {
+    if (e.target.id === 'spoolModal') closeModal();
+});
+
+function closeModal() {
+    document.getElementById('spoolModal').classList.remove('active');
+}
+
+// Image upload
+const uploadZone = document.getElementById('uploadZone');
+const imageInput = document.getElementById('imageInput');
+const imagePreview = document.getElementById('imagePreview');
+
+uploadZone.addEventListener('click', () => imageInput.click());
+
+uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+});
+
+uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('dragover');
+});
+
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        handleImageFile(file);
+    }
+});
+
+imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handleImageFile(file);
+});
+
+function handleImageFile(file) {
+    currentImageFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        imagePreview.src = e.target.result;
+        imagePreview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+// Edit spool (global function)
+window.editSpool = async function(id) {
+    try {
+        const { data, error } = await supabase
+            .from('spool_types')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+        if (error) throw error;
+        
+        document.getElementById('modalTitle').textContent = 'Edit Spool';
+        document.getElementById('spoolId').value = data.id;
+        document.getElementById('spoolBrand').value = data.brand;
+        document.getElementById('spoolMaterial').value = data.material || '';
+        document.getElementById('spoolType').value = data.spool_type;
+        document.getElementById('spoolWeight').value = data.empty_weight;
+        document.getElementById('spoolKg').value = data.kg;
+        document.getElementById('currentImageUrl').value = data.image_url || '';
+        
+        if (data.image_url) {
+            imagePreview.src = data.image_url;
+            imagePreview.style.display = 'block';
+        } else {
+            imagePreview.style.display = 'none';
+        }
+        
+        currentImageFile = null;
+        document.getElementById('spoolModal').classList.add('active');
+    } catch (error) {
+        alert('Error loading spool: ' + error.message);
+    }
+};
+
+// Delete spool (global function)
+window.deleteSpool = async function(id) {
+    if (!confirm('Are you sure you want to delete this spool?')) return;
+    
+    try {
+        const { error } = await supabase
+            .from('spool_types')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        loadSpools();
+    } catch (error) {
+        alert('Error deleting spool: ' + error.message);
+    }
+};
+
+// Save spool
+document.getElementById('spoolForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+    
+    try {
+        let imageUrl = document.getElementById('currentImageUrl').value;
+        
+        // Upload image if new file selected
+        if (currentImageFile) {
+            const fileName = Date.now() + '-' + currentImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('spool-images')
+                .upload(fileName, currentImageFile);
+            
+            if (uploadError) throw uploadError;
+            
+            const { data: urlData } = supabase.storage
+                .from('spool-images')
+                .getPublicUrl(fileName);
+            
+            imageUrl = urlData.publicUrl;
+        }
+        
+        const spoolData = {
+            brand: document.getElementById('spoolBrand').value,
+            material: document.getElementById('spoolMaterial').value || null,
+            spool_type: document.getElementById('spoolType').value,
+            empty_weight: parseInt(document.getElementById('spoolWeight').value),
+            kg: parseFloat(document.getElementById('spoolKg').value),
+            image_url: imageUrl
+        };
+        
+        const id = document.getElementById('spoolId').value;
+        
+        if (id) {
+            // Update
+            const { error } = await supabase
+                .from('spool_types')
+                .update(spoolData)
+                .eq('id', id);
+            
+            if (error) throw error;
+        } else {
+            // Insert
+            const { error } = await supabase
+                .from('spool_types')
+                .insert([spoolData]);
+            
+            if (error) throw error;
+        }
+        
+        closeModal();
+        loadSpools();
+    } catch (error) {
+        alert('Error saving spool: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save Spool';
+    }
+});
+</script>
+
+</body>
+</html>
