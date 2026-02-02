@@ -554,7 +554,7 @@ const SUPABASE_URL = 'https://mukczuwgyebdimvtcjuq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11a2N6dXdneWViZGltdnRjanVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MDA1NDgsImV4cCI6MjA4NTQ3NjU0OH0.F67m3cMx5C45Hus-AlvUZO_xhDuckWwlbYAvzt9b4Mg';
 const ADMIN_PASSWORD = 'admin123'; // Change this to your desired password
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentImageFile = null;
 let allSpools = [];
@@ -609,7 +609,7 @@ async function loadSpools() {
     table.style.display = 'none';
     
     try {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('spool_types')
             .select('*')
             .order('brand', { ascending: true });
@@ -735,7 +735,7 @@ function handleImageFile(file) {
 // Edit spool (global function)
 window.editSpool = async function(id) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('spool_types')
             .select('*')
             .eq('id', id)
@@ -771,7 +771,7 @@ window.deleteSpool = async function(id) {
     if (!confirm('Are you sure you want to delete this spool?')) return;
     
     try {
-        const { error } = await supabase
+        const { error } = await db
             .from('spool_types')
             .delete()
             .eq('id', id);
@@ -798,13 +798,13 @@ document.getElementById('spoolForm').addEventListener('submit', async (e) => {
         // Upload image if new file selected
         if (currentImageFile) {
             const fileName = Date.now() + '-' + currentImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { data: uploadData, error: uploadError } = await db.storage
                 .from('spool-images')
                 .upload(fileName, currentImageFile);
             
             if (uploadError) throw uploadError;
             
-            const { data: urlData } = supabase.storage
+            const { data: urlData } = db.storage
                 .from('spool-images')
                 .getPublicUrl(fileName);
             
@@ -824,7 +824,7 @@ document.getElementById('spoolForm').addEventListener('submit', async (e) => {
         
         if (id) {
             // Update
-            const { error } = await supabase
+            const { error } = await db
                 .from('spool_types')
                 .update(spoolData)
                 .eq('id', id);
@@ -832,7 +832,7 @@ document.getElementById('spoolForm').addEventListener('submit', async (e) => {
             if (error) throw error;
         } else {
             // Insert
-            const { error } = await supabase
+            const { error } = await db
                 .from('spool_types')
                 .insert([spoolData]);
             
