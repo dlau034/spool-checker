@@ -335,7 +335,7 @@
             letter-spacing: -0.3px;
         }
 
-        .spool-material-badge {
+        .spool-type-badge {
             font-size: 11px;
             font-weight: 700;
             padding: 4px 10px;
@@ -576,7 +576,6 @@
 
             const filteredSpools = spoolDatabase.filter(spool =>
                 spool.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                spool.material.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 spool.spoolType.toLowerCase().includes(searchQuery.toLowerCase())
             );
 
@@ -603,10 +602,12 @@
                                     <div className="selected-spool-info">
                                         <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
                                             <div style={{flex: 1}}>
-                                                <div className="spool-brand">{selectedSpool.brand}</div>
+                                                <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px'}}>
+                                                    <div className="spool-brand">{selectedSpool.brand}</div>
+                                                    <div className="spool-type-badge">{selectedSpool.spoolType}</div>
+                                                </div>
                                                 <div className="spool-details">
-                                                    {selectedSpool.material}, {selectedSpool.kg || '1'}kg<br/>
-                                                    {selectedSpool.spoolType}<br/>
+                                                    {selectedSpool.kg || '1'}kg<br/>
                                                     Empty weight: {selectedSpool.emptyWeight}g
                                                 </div>
                                             </div>
@@ -618,7 +619,7 @@
                                                 {selectedSpool.imageUrl ? (
                                                     <img 
                                                         src={selectedSpool.imageUrl} 
-                                                        alt={`${selectedSpool.brand} ${selectedSpool.material}`}
+                                                        alt={`${selectedSpool.brand} ${selectedSpool.spoolType}`}
                                                         style={{
                                                             width: '100%',
                                                             height: '100%',
@@ -754,10 +755,10 @@
                                                     <div className="spool-card-info">
                                                         <div className="spool-card-header">
                                                             <div className="spool-name">{spool.brand}</div>
-                                                            <div className="spool-material-badge">{spool.material}</div>
+                                                            <div className="spool-type-badge">{spool.spoolType}</div>
                                                         </div>
                                                         <div className="spool-metadata">
-                                                            {spool.spoolType}<br/>
+                                                            {spool.kg || '1'}kg<br/>
                                                             Empty weight: {spool.emptyWeight}g
                                                         </div>
                                                     </div>
@@ -765,7 +766,7 @@
                                                         {spool.imageUrl ? (
                                                             <img 
                                                                 src={spool.imageUrl} 
-                                                                alt={`${spool.brand} ${spool.material}`}
+                                                                alt={`${spool.brand} ${spool.spoolType}`}
                                                                 style={{
                                                                     width: '100%',
                                                                     height: '100%',
