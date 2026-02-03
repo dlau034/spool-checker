@@ -1,0 +1,21 @@
+{
+  "name": "spool-checker",
+  "version": "1.0.0",
+  "description": "3D Filament Spool Checker - Calculate remaining filament weight",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 3000 -o",
+    "start": "npx http-server -p 3000"
+  },
+  "keywords": [
+    "3d-printing",
+    "filament",
+    "calculator",
+    "spool"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
