@@ -147,6 +147,47 @@
             gap: 12px;
         }
 
+        .admin-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid #E8E8E8;
+            margin-bottom: 20px;
+            background: white;
+            padding: 0;
+            border-radius: 16px 16px 0 0;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-tab {
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #8E8E93;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .admin-tab.active {
+            color: #14786F;
+            border-bottom-color: #14786F;
+        }
+
+        .admin-tab:hover {
+            color: #1C1C1E;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .btn-secondary {
             background: #F0F0F5;
             color: #1C1C1E;
@@ -387,6 +428,60 @@
             color: #8E8E93;
         }
 
+        .about-editor {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .about-form-group {
+            margin-bottom: 24px;
+        }
+
+        .about-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1C1C1E;
+            margin-bottom: 8px;
+        }
+
+        .about-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 12px 16px;
+            border: 1px solid #E8E8E8;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            resize: vertical;
+        }
+
+        .about-textarea:focus {
+            outline: none;
+            border-color: #14786F;
+            box-shadow: 0 0 0 3px rgba(20, 120, 111, 0.1);
+        }
+
+        .about-preview {
+            background: #F8F9FA;
+            border: 1px solid #E8E8E8;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            min-height: 200px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1C1C1E;
+        }
+
+        .about-hint {
+            font-size: 12px;
+            color: #8E8E93;
+            margin-top: 8px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .form-row {
@@ -450,14 +545,20 @@
 <!-- Admin Screen -->
 <div class="admin-screen" id="adminScreen">
     <div class="admin-header">
-        <h1 class="admin-title">Spool Database</h1>
+        <h1 class="admin-title">Admin Panel</h1>
         <div class="admin-actions">
-            <button class="btn-secondary btn-add" id="addNewBtn">+ Add New Spool</button>
             <button class="btn-secondary" id="logoutBtn">Logout</button>
         </div>
     </div>
 
-    <div class="table-container">
+    <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="spools">Spool Database</button>
+        <button class="admin-tab" data-tab="about">About Page</button>
+    </div>
+
+    <!-- Spools Tab -->
+    <div id="spools-tab" class="tab-content active">
+        <div class="table-container">
         <div class="search-box">
             <input 
                 type="text" 
@@ -489,6 +590,34 @@
             </thead>
             <tbody id="spoolTableBody"></tbody>
         </table>
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="btn-secondary btn-add" id="addNewBtn">+ Add New Spool</button>
+        </div>
+    </div>
+
+    <!-- About Tab -->
+    <div id="about-tab" class="tab-content">
+        <div class="about-editor">
+            <div class="about-form-group">
+                <label class="about-label">About Content</label>
+                <p class="about-hint">Use markdown syntax for links: [link text](https://example.com)</p>
+                <textarea
+                    id="aboutContent"
+                    class="about-textarea"
+                    placeholder="Enter about page content here...&#10;&#10;Example:&#10;Welcome to Spool Checker!&#10;&#10;Learn more at [our website](https://example.com)"
+                ></textarea>
+            </div>
+
+            <div class="about-form-group">
+                <label class="about-label">Preview</label>
+                <div class="about-preview" id="aboutPreview">
+                    (Preview will appear here)
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="saveAboutBtn">Save About Content</button>
+        </div>
     </div>
 </div>
 
@@ -850,6 +979,119 @@ document.getElementById('spoolForm').addEventListener('submit', async (e) => {
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Save Spool';
+    }
+});
+
+// Tab switching functionality
+document.querySelectorAll('.admin-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+
+        // Remove active class from all tabs and contents
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        // Add active class to clicked tab and corresponding content
+        tab.classList.add('active');
+        document.getElementById(tabName + '-tab').classList.add('active');
+
+        // Load about content when switching to about tab
+        if (tabName === 'about') {
+            loadAboutContent();
+        }
+    });
+});
+
+// About page functionality
+let aboutData = {};
+
+async function loadAboutContent() {
+    try {
+        const { data, error } = await db
+            .from('about_page')
+            .select('content')
+            .eq('id', 1)
+            .single();
+
+        if (!error && data) {
+            aboutData = data;
+            document.getElementById('aboutContent').value = data.content || '';
+        } else {
+            document.getElementById('aboutContent').value = '';
+        }
+
+        updateAboutPreview();
+    } catch (error) {
+        console.error('Error loading about content:', error);
+    }
+}
+
+function updateAboutPreview() {
+    const content = document.getElementById('aboutContent').value;
+    const preview = document.getElementById('aboutPreview');
+
+    if (!content) {
+        preview.innerHTML = '(Preview will appear here)';
+        return;
+    }
+
+    // Parse markdown links [text](url)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    let html = content.replace(/\n/g, '<br>');
+    html = html.replace(linkRegex, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #14786F; text-decoration: none; border-bottom: 1px solid #14786F;">$1</a>');
+
+    preview.innerHTML = html;
+}
+
+document.getElementById('aboutContent').addEventListener('input', updateAboutPreview);
+
+document.getElementById('saveAboutBtn').addEventListener('click', async (e) => {
+    e.preventDefault();
+
+    const content = document.getElementById('aboutContent').value;
+    const btn = document.getElementById('saveAboutBtn');
+
+    try {
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        if (aboutData && aboutData.id) {
+            // Update existing record
+            const { error } = await db
+                .from('about_page')
+                .update({ content })
+                .eq('id', 1);
+
+            if (error) throw error;
+        } else {
+            // Insert new record
+            const { error } = await db
+                .from('about_page')
+                .insert([{ id: 1, content }]);
+
+            if (error && error.code !== '23505') {
+                // 23505 is unique constraint violation - means record already exists
+                throw error;
+            }
+
+            // If insert failed due to unique constraint, update instead
+            if (error && error.code === '23505') {
+                const { error: updateError } = await db
+                    .from('about_page')
+                    .update({ content })
+                    .eq('id', 1);
+
+                if (updateError) throw updateError;
+            }
+        }
+
+        aboutData = { id: 1, content };
+        alert('About page content saved successfully!');
+    } catch (error) {
+        alert('Error saving about content: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save About Content';
     }
 });
 })(); // End IIFE
